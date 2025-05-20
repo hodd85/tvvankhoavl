@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản lý khách hàng - Bootstrap</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    #video {
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .photo-list img {
+      width: 100px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container my-4">
+  <h2 class="mb-4 text-center">Quản lý khách hàng</h2>
+
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs mb-3" id="modeTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab" aria-controls="create" aria-selected="true">Tạo khách</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab" aria-controls="search" aria-selected="false">Tìm khách</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="modeTabsContent">
+    <!-- Tạo khách -->
+    <div class="tab-pane fade show active" id="create" role="tabpanel" aria-labelledby="create-tab">
+      <form id="createForm" class="mb-3">
+        <div class="mb-3">
+          <label for="inputName" class="form-label">Họ tên</label>
+          <input type="text" class="form-control" id="inputName" placeholder="Nhập họ tên" required />
+        </div>
+        <div class="mb-3">
+          <label for="inputPhone" class="form-label">Số điện thoại</label>
+          <input type="tel" class="form-control" id="inputPhone" placeholder="Nhập số điện thoại" required />
+        </div>
+        <div class="mb-3">
+          <label for="inputDate" class="form-label">Ngày mua</label>
+          <input type="date" class="form-control" id="inputDate" required />
+        </div>
+        <div class="mb-3">
+          <label for="inputAmount" class="form-label">Số tiền</label>
+          <input type="number" class="form-control" id="inputAmount" placeholder="Nhập số tiền" min="0" required />
+        </div>
+
+        
+
+        <video id="video" autoplay muted playsinline style="display:none;" class="mb-3 rounded"></video>
+		<div class="mb-3">
+          <label class="form-label">Chụp ảnh</label><br />
+          <button type="button" id="btnStartCamera" class="btn btn-primary me-2">Bật camera</button>
+          <button type="button" id="btnTakePhoto" class="btn btn-success me-2" style="display:none;">Chụp ảnh</button>
+          <button type="button" id="btnStopCamera" class="btn btn-danger me-2" style="display:none;">Tắt camera</button>
+          <button type="button" id="btnSwitchCamera" class="btn btn-secondary" style="display:none;" title="Chuyển camera">🔄</button>
+        </div>
+
+        <div class="photo-list mb-3 d-flex flex-wrap" id="photoList"></div>
+
+        <button type="submit" class="btn btn-success">Lưu khách</button>
+      </form>
+    </div>
+
+    <!-- Tìm khách -->
+    <div class="tab-pane fade" id="search" role="tabpanel" aria-labelledby="search-tab">
+      <div class="input-group mb-3">
+        <input type="tel" id="searchPhone" class="form-control" placeholder="Nhập số điện thoại cần tìm" aria-label="Số điện thoại" />
+        <button class="btn btn-outline-secondary" type="button" id="btnSearchPhone">🔍 Tìm</button>
+      </div>
+
+      <ul class="list-group" id="searchResults"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS Bundle (Popper + Bootstrap JS) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  const customers = [];
+  let photos = [];
+
+  const video = document.getElementById('video');
+  const btnStartCamera = document.getElementById('btnStartCamera');
+  const btnTakePhoto = document.getElementById('btnTakePhoto');
+  const btnStopCamera = document.getElementById('btnStopCamera');
+  const btnSwitchCamera = document.getElementById('btnSwitchCamera');
+  const photoList = document.getElementById('photoList');
+
+  let stream = null;
+  let usingFrontCamera = true; // mặc định camera trước
+
+  // Set default date hôm nay cho inputDate
+  document.getElementById('inputDate').valueAsDate = new Date();
+
+  btnStartCamera.addEventListener('click', async () => {
+    try {
+      const constraints = {
+        video: { facingMode: usingFrontCamera ? 'user' : 'environment' }
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      video.style.display = 'block';
+      btnTakePhoto.style.display = 'inline-block';
+      btnStopCamera.style.display = 'inline-block';
+      btnStartCamera.style.display = 'none';
+      btnSwitchCamera.style.display = 'inline-block';
+    } catch (error) {
+      alert('Không thể mở camera: ' + error.message);
+    }
+  });
+
+  btnTakePhoto.addEventListener('click', () => {
+    if (!stream) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 320;
+    canvas.height = video.videoHeight || 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgUrl = canvas.toDataURL('image/png');
+
+    photos.push(imgUrl);
+    renderPhotos();
+  });
+
+  btnStopCamera.addEventListener('click', () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
+    }
+    video.style.display = 'none';
+    btnTakePhoto.style.display = 'none';
+    btnStopCamera.style.display = 'none';
+    btnStartCamera.style.display = 'inline-block';
+    btnSwitchCamera.style.display = 'none';
+  });
+
+  btnSwitchCamera.addEventListener('click', async () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    usingFrontCamera = !usingFrontCamera;
+    try {
+      const constraints = {
+        video: { facingMode: usingFrontCamera ? 'user' : 'environment' }
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+    } catch (error) {
+      alert('Không thể chuyển camera: ' + error.message);
+    }
+  });
+
+  function renderPhotos() {
+    photoList.innerHTML = '';
+    photos.forEach((src, idx) => {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = `Ảnh ${idx + 1}`;
+      img.title = `Ảnh ${idx + 1}`;
+      photoList.appendChild(img);
+    });
+  }
+
+  // Xử lý lưu khách
+  document.getElementById('createForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('inputName').value.trim();
+    const phone = document.getElementById('inputPhone').value.trim();
+    const date = document.getElementById('inputDate').value;
+    const amountStr = document.getElementById('inputAmount').value;
+    const amount = parseFloat(amountStr);
+
+    if (!name || !phone || !date || isNaN(amount) || amount < 0) {
+      alert('Vui lòng nhập đầy đủ và hợp lệ thông tin khách hàng.');
+      return;
+    }
+
+    customers.push({ name, phone, date, amount, photos: [...photos] });
+    alert('Lưu khách hàng thành công!');
+
+    // Reset form và ảnh
+    e.target.reset();
+    document.getElementById('inputDate').valueAsDate = new Date();
+    photos = [];
+    renderPhotos();
+
+    // Tắt camera nếu đang bật
+    if (stream) btnStopCamera.click();
+  });
+
+  // Tìm kiếm khách
+  document.getElementById('btnSearchPhone').addEventListener('click', () => {
+    const query = document.getElementById('searchPhone').value.trim();
+    const resultsContainer = document.getElementById('searchResults');
+    resultsContainer.innerHTML = '';
+
+    if (!query) {
+      alert('Vui lòng nhập số điện thoại để tìm.');
+      return;
+    }
+
+    const matched = customers.filter(cust => cust.phone.includes(query));
+
+    if (matched.length === 0) {
+      resultsContainer.innerHTML = `<li class="list-group-item">Không tìm thấy khách hàng nào.</li>`;
+      return;
+    }
+
+    matched.forEach((cust) => {
+      const li = document.createElement('li');
+      li.classList.add('list-group-item');
+      li.innerHTML = `
+        <strong>Họ tên:</strong> ${cust.name}<br/>
+        <strong>Số điện thoại:</strong> ${cust.phone}<br/>
+        <strong>Ngày mua:</strong> ${cust.date}<br/>
+        <strong>Số tiền:</strong> ${cust.amount.toLocaleString()}<br/>
+        <div class="d-flex flex-wrap mt-2">
+          ${cust.photos.map((p) => `<img src="${p}" alt="Ảnh khách" style="width:80px; margin-right:5px; border-radius:4px; border:1px solid #ccc;">`).join('')}
+        </div>
+      `;
+      resultsContainer.appendChild(li);
+    });
+  });
+</script>
+</body>
+</html>
