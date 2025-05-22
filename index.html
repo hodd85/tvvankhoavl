@@ -18,6 +18,9 @@
       border: 1px solid #ddd;
       border-radius: 4px;
     }
+    .toggle-switch .btn {
+      width: 150px;
+    }
   </style>
 </head>
 <body>
@@ -25,19 +28,18 @@
 <div class="container my-4">
   <h2 class="mb-4 text-center">Quản lý khách hàng</h2>
 
-  <!-- Nav tabs -->
-  <ul class="nav nav-tabs mb-3" id="modeTabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab" aria-controls="create" aria-selected="true">Tạo khách</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="search-tab" data-bs-toggle="tab" data-bs-target="#search" type="button" role="tab" aria-controls="search" aria-selected="false">Tìm khách</button>
-    </li>
-  </ul>
+  <!-- Toggle switch -->
+  <div class="btn-group toggle-switch mb-3" role="group">
+    <input type="radio" class="btn-check" name="toggleTab" id="toggleCreate" autocomplete="off" checked>
+    <label class="btn btn-info text-white" for="toggleCreate">Tạo khách</label>
+
+    <input type="radio" class="btn-check" name="toggleTab" id="toggleSearch" autocomplete="off">
+    <label class="btn btn-outline-secondary" for="toggleSearch">Tìm khách</label>
+  </div>
 
   <div class="tab-content" id="modeTabsContent">
     <!-- Tạo khách -->
-    <div class="tab-pane fade show active" id="create" role="tabpanel" aria-labelledby="create-tab">
+    <div class="tab-pane fade show active" id="create" role="tabpanel">
       <form id="createForm" class="mb-3">
         <div class="mb-3">
           <label for="inputName" class="form-label">Họ tên</label>
@@ -56,10 +58,8 @@
           <input type="number" class="form-control" id="inputAmount" placeholder="Nhập số tiền" min="0" required />
         </div>
 
-        
-
         <video id="video" autoplay muted playsinline style="display:none;" class="mb-3 rounded"></video>
-		<div class="mb-3">
+        <div class="mb-3">
           <label class="form-label">Chụp ảnh</label><br />
           <button type="button" id="btnStartCamera" class="btn btn-primary me-2">Bật camera</button>
           <button type="button" id="btnTakePhoto" class="btn btn-success me-2" style="display:none;">Chụp ảnh</button>
@@ -74,18 +74,17 @@
     </div>
 
     <!-- Tìm khách -->
-    <div class="tab-pane fade" id="search" role="tabpanel" aria-labelledby="search-tab">
+    <div class="tab-pane fade" id="search" role="tabpanel">
       <div class="input-group mb-3">
         <input type="tel" id="searchPhone" class="form-control" placeholder="Nhập số điện thoại cần tìm" aria-label="Số điện thoại" />
         <button class="btn btn-outline-secondary" type="button" id="btnSearchPhone">🔍 Tìm</button>
       </div>
-
       <ul class="list-group" id="searchResults"></ul>
     </div>
   </div>
 </div>
 
-<!-- Bootstrap JS Bundle (Popper + Bootstrap JS) -->
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -100,9 +99,8 @@
   const photoList = document.getElementById('photoList');
 
   let stream = null;
-  let usingFrontCamera = true; // mặc định camera trước
+  let usingFrontCamera = true;
 
-  // Set default date hôm nay cho inputDate
   document.getElementById('inputDate').valueAsDate = new Date();
 
   btnStartCamera.addEventListener('click', async () => {
@@ -175,10 +173,8 @@
     });
   }
 
-  // Xử lý lưu khách
   document.getElementById('createForm').addEventListener('submit', (e) => {
     e.preventDefault();
-
     const name = document.getElementById('inputName').value.trim();
     const phone = document.getElementById('inputPhone').value.trim();
     const date = document.getElementById('inputDate').value;
@@ -193,17 +189,13 @@
     customers.push({ name, phone, date, amount, photos: [...photos] });
     alert('Lưu khách hàng thành công!');
 
-    // Reset form và ảnh
     e.target.reset();
     document.getElementById('inputDate').valueAsDate = new Date();
     photos = [];
     renderPhotos();
-
-    // Tắt camera nếu đang bật
     if (stream) btnStopCamera.click();
   });
 
-  // Tìm kiếm khách
   document.getElementById('btnSearchPhone').addEventListener('click', () => {
     const query = document.getElementById('searchPhone').value.trim();
     const resultsContainer = document.getElementById('searchResults');
@@ -235,6 +227,17 @@
       `;
       resultsContainer.appendChild(li);
     });
+  });
+
+  // Toggle tab switch behavior
+  document.getElementById('toggleCreate').addEventListener('change', () => {
+    document.getElementById('create').classList.add('show', 'active');
+    document.getElementById('search').classList.remove('show', 'active');
+  });
+
+  document.getElementById('toggleSearch').addEventListener('change', () => {
+    document.getElementById('search').classList.add('show', 'active');
+    document.getElementById('create').classList.remove('show', 'active');
   });
 </script>
 </body>
